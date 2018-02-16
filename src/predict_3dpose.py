@@ -443,7 +443,7 @@ def sample():
       enc_in   = np.array_split( enc_in,  n2d // batch_size )
       dec_out  = np.array_split( dec_out, n3d // batch_size )
       all_poses_3d = []
-
+      print (enc_in[1].shape)
       for bidx in range( len(enc_in) ):
 
         # Dropout probability 0 (keep probability 1) for sampling
@@ -458,6 +458,9 @@ def sample():
 
       # Put all the poses together
       enc_in, dec_out, poses3d = map( np.vstack, [enc_in, dec_out, all_poses_3d] )
+
+      print (enc_in[1].shape)
+      break
 
       # Convert back to world coordinates
       if FLAGS.camera_frame:
