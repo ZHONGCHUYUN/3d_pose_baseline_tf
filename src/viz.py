@@ -28,11 +28,10 @@ def show3Dpose(channels, ax, lcolor="#3498db", rcolor="#e74c3c", add_labels=Fals
   I   = np.array([1,2,3,1,7,8,1, 13,14,15,14,18,19,14,26,27])-1 # start points
   J   = np.array([2,3,4,7,8,9,13,14,15,16,18,19,20,26,27,28])-1 # end points
   LR  = np.array([1,1,1,0,0,0,0, 0, 0, 0, 0, 0, 0, 1, 1, 1], dtype=bool)
-
   # Make connection matrix
   for i in np.arange( len(I) ):
     x, y, z = [np.array( [vals[I[i], j], vals[J[i], j]] ) for j in range(3)]
-    ax.plot(x, y, z, lw=2, c=lcolor if LR[i] else rcolor)
+    ax.plot(x, y, z, marker='o', markersize=2, lw=1, c=lcolor if LR[i] else rcolor)
 
   RADIUS = 750 # space around the subject
   xroot, yroot, zroot = vals[0,0], vals[0,1], vals[0,2]
@@ -56,7 +55,7 @@ def show3Dpose(channels, ax, lcolor="#3498db", rcolor="#e74c3c", add_labels=Fals
   ax.set_aspect('equal')
 
   # Get rid of the panes (actually, make them white)
-  white = (1.0, 1.0, 1.0, 0.0)
+  white = (1.0, 1.0, 0.1, 0.0)
   ax.w_xaxis.set_pane_color(white)
   ax.w_yaxis.set_pane_color(white)
   # Keep z pane

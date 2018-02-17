@@ -51,6 +51,12 @@ tf.app.flags.DEFINE_string("cameras_path","data/h36m/cameras.h5","Directory to l
 tf.app.flags.DEFINE_string("data_dir",   "data/h36m/", "Data directory")
 tf.app.flags.DEFINE_string("train_dir", "experiments", "Training directory.")
 
+# openpose
+tf.app.flags.DEFINE_string("openpose", "openpose_output", "openpose output Data directory")
+tf.app.flags.DEFINE_integer("gif_fps", 30, "output gif framerate")
+tf.app.flags.DEFINE_integer("verbose", 2, "0:Error, 1:Warning, 2:INFO*(default), 3:debug")
+
+
 # Train or load
 tf.app.flags.DEFINE_boolean("sample", False, "Set to True for sampling.")
 tf.app.flags.DEFINE_boolean("use_cpu", False, "Whether to use the CPU")
@@ -443,7 +449,7 @@ def sample():
       enc_in   = np.array_split( enc_in,  n2d // batch_size )
       dec_out  = np.array_split( dec_out, n3d // batch_size )
       all_poses_3d = []
-      print (enc_in[1].shape)
+
       for bidx in range( len(enc_in) ):
 
         # Dropout probability 0 (keep probability 1) for sampling
@@ -458,9 +464,6 @@ def sample():
 
       # Put all the poses together
       enc_in, dec_out, poses3d = map( np.vstack, [enc_in, dec_out, all_poses_3d] )
-
-      print (enc_in[1].shape)
-      break
 
       # Convert back to world coordinates
       if FLAGS.camera_frame:
