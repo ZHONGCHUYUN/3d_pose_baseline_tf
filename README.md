@@ -51,6 +51,27 @@ This will produce a visualization similar to this:
 
 ![Visualization example](/imgs/viz_example.png?raw=1)
 
+
+### OpenPose Single Person Reader
+
+<p align="left">
+    <img src="/imgs/open_pose_input.gif", width="360">
+</p>
+
+<p align="right">
+    <img src="/imgs/output.gif", width="360">
+</p>
+
+1. Setup OpenPose and use `--write_json` flag to export Pose Keypoints. 
+2. Download Pre-trained model below, simply run
+
+`python src/openpose_3dpose_sandbox.py --camera_frame --residual --batch_norm --dropout 0.5 --max_norm --evaluateActionWise --use_sh --epochs 200 --load 4874200 --openpose /path/to/openpose/output/json_directory --gif_fps 30`
+
+![Fps drops](/imgs/dirty_plot.png?raw=1)
+smoothing by median value
+![Smoothing Fps](/imgs/smooth_plot.png?raw=1)
+
+
 ### Training
 
 To train a model with clean 2d detections, run:
