@@ -29,15 +29,15 @@ def show_anim_curves(anim_dict, _plt):
     return _plt
 
 def read_openpose_json(smooth=True, *args):
+    # openpose output format:
+    # [x1,y1,c1,x2,y2,c2,...]
+    # ignore confidence score, take x and y [x1,y1,x2,y2,...]
+
     logger.info("start reading data")
+    #load json files
     json_files = os.listdir(openpose_output_dir)
-    
     # check for other file types
-    json_files = sorted([filename for filename in json_files if filename.endswith(".json")])          
-
-    first_4_frame = [int(re.findall("(\d+)", o)[0]) for o in json_files[:5]]
-    last_4_frame = [int(re.findall("(\d+)", o)[0]) for o in json_files[-5:]]
-
+    json_files = sorted([filename for filename in json_files if filename.endswith(".json")])
     cache = {}
     smoothed = {}
     ### extract x,y and ignore confidence score
@@ -70,49 +70,55 @@ def read_openpose_json(smooth=True, *args):
         return cache
 
     logger.info("start smoothing")
-    ### smooth by median value, 4 frames 
+    # create frame blocks
+    first_frame_block = [int(re.findall("(\d+)", o)[0]) for o in json_files[:6]]
+    last_frame_block = [int(re.findall("(\d+)", o)[0]) for o in json_files[-6:]]
+    ### smooth by median value, n frames 
     for frame, xy in cache.items():
         forward,back = ([] for _ in range(2))
         _len = len(xy) # 36
-        # create array of parallel frames (-4<n>4)
-        # first 4 frames, get value of xy in postive lookahead frames(current frame + 4)
-        if frame in first_4_frame:
+        # create array of parallel frames (-3<n>3)
+        # first n frames, get value of xy in postive lookahead frames(current frame + 3)
+        if frame in first_frame_block:
             for forward_range in range(1,4):
                 forward += cache[frame+forward_range]
 
-        # last 4 frames, get value of xy in negative lookahead frames(current frame - 4)
-        elif frame in last_4_frame:
+        # last n frames, get value of xy in negative lookahead frames(current frame - 3)
+        elif frame in last_frame_block:
             for back_range in range(1,4):
                 back += cache[frame-forward_range]
-        # between frames, get value of xy in bi-directional frames(current frame -+ 5)     
+        # between frames, get value of xy in bi-directional frames(current frame -+ 6)     
         else:
-            for forward_range in range(1,5):
+            for forward_range in range(1,7):
                 forward += cache[frame+forward_range]
-            for back_range in range(1,5):
+            for back_range in range(1,7):
                 back += cache[frame-forward_range]
 
         # build frame range vector 
         frames_joint_median = [0 for i in range(_len)]
         # more info about mapping in src/data_utils.py
 
-        # for each joint in array
+        # for each 18joints*x,y  (x1,y1,x2,y2,...)~36 
         for x in range(0,_len,2):
             # set x and y
             y = x+1
-            if frame in first_4_frame:
-                # get vector of 4 frames forward for x and y, incl. current frame
+            if frame in first_frame_block:
+                # get vector of n frames forward for x and y, incl. current frame
                 x_v = [xy[x], forward[x], forward[x+_len], forward[x+_len*2]]
                 y_v = [xy[y], forward[y], forward[y+_len], forward[y+_len*2]]
-            elif frame in last_4_frame:
-                # get vector of 4 frames back for x and y, incl. current frame
+            elif frame in last_frame_block:
+                # get vector of n frames back for x and y, incl. current frame
                 x_v =[xy[x], back[x], back[x+_len], back[x+_len*2]]
                 y_v =[xy[y], back[y], back[y+_len], back[y+_len*2]]
             else:
-                # get vector of 4 frames forward/back for x and y, incl. current frame
-                x_v =[xy[x], forward[x], forward[x+_len], forward[x+_len*2], forward[x+_len*3],
-                        back[x], back[x+_len], back[x+_len*2], back[x+_len*3]]
-                y_v =[xy[y], forward[y], forward[y+_len], forward[y+_len*2], forward[y+_len*3],
-                        back[y], back[y+_len], back[y+_len*2], back[y+_len*3]]
+                # get vector of n frames forward/back for x and y, incl. current frame
+                # median value calc: find neighbor frames joint value and sorted them, use numpy median module
+                # frame[x1,y1,[x2,y2],..]frame[x1,y1,[x2,y2],...], frame[x1,y1,[x2,y2],..]
+                #                 ^---------------------|-------------------------^
+                x_v =[xy[x], forward[x], forward[x+_len], forward[x+_len*2], forward[x+_len*3],forward[x+_len*4], forward[x+_len*5],
+                        back[x], back[x+_len], back[x+_len*2], back[x+_len*3], back[x+_len*4], back[x+_len*5]]
+                y_v =[xy[y], forward[y], forward[y+_len], forward[y+_len*2], forward[y+_len*3],forward[y+_len*4], forward[y+_len*5],
+                        back[y], back[y+_len], back[y+_len*2], back[y+_len*3], back[y+_len*4], back[y+_len*5]]
 
             # get median of vector
             x_med = np.median(sorted(x_v))
@@ -178,13 +184,14 @@ def main(_):
             joints_array = np.zeros((1, 36))
             joints_array[0] = [0 for i in range(36)]
             for o in range(len(joints_array[0])):
+                #feed array with xy array
                 joints_array[0][o] = xy[o]
             _data = joints_array[0]
-
+            # mapping all body parts or 3d-pose-baseline format
             for i in range(len(order)):
                 for j in range(2):
+                    # create encoder input
                     enc_in[0][order[i] * 2 + j] = _data[i * 2 + j]
-
             for j in range(2):
                 # Hip
                 enc_in[0][0 * 2 + j] = (enc_in[0][1 * 2 + j] + enc_in[0][6 * 2 + j]) / 2
@@ -193,8 +200,10 @@ def main(_):
                 # Thorax
                 enc_in[0][13 * 2 + j] = 2 * enc_in[0][12 * 2 + j] - enc_in[0][14 * 2 + j]
 
+            # set spine
             spine_x = enc_in[0][24]
             spine_y = enc_in[0][25]
+
             enc_in = enc_in[:, dim_to_use_2d]
             mu = data_mean_2d[dim_to_use_2d]
             stddev = data_std_2d[dim_to_use_2d]
@@ -215,6 +224,7 @@ def main(_):
             subplot_idx, exidx = 1, 1
             max = 0
             min = 10000
+
             for i in range(poses3d.shape[0]):
                 for j in range(32):
                     tmp = poses3d[i][j * 3 + 2]
@@ -248,8 +258,8 @@ def main(_):
             before_pose = poses3d
 
 
-    logger.info("creating Gif {0}, please Wait!".format(pngName))
     imageio.mimsave('png/movie_smoothing.gif', png_lib, fps=FLAGS.gif_fps)
+    logger.info("creating Gif png/movie_smoothing.gif, please Wait!")
     logger.info("Done!".format(pngName))
 
 
