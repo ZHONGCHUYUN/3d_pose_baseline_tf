@@ -29,18 +29,24 @@ def show_anim_curves(anim_dict, _plt):
     return _plt
 
 def read_openpose_json(smooth=True, *args):
-    json_files = sorted(os.listdir(openpose_output_dir))
-    first_4_frame = [int(re.findall("(\d+)", o)[0]) for o in json_files[:4]]
-    last_4_frame = [int(re.findall("(\d+)", o)[0]) for o in json_files[-4:]]
+    logger.info("start reading data")
+    json_files = os.listdir(openpose_output_dir)
+    
+    # check for other file types
+    json_files = sorted([filename for filename in json_files if filename.endswith(".json")])          
+
+    first_4_frame = [int(re.findall("(\d+)", o)[0]) for o in json_files[:5]]
+    last_4_frame = [int(re.findall("(\d+)", o)[0]) for o in json_files[-5:]]
 
     cache = {}
     smoothed = {}
     ### extract x,y and ignore confidence score
     for file_name in json_files:
-        logger.debug("Reading {0}".format(file_name))
+        logger.debug("reading {0}".format(file_name))
         _file = os.path.join(openpose_output_dir, file_name)
         if not os.path.isfile(_file): raise Exception("No file found!!, {0}".format(_file))
         data = json.load(open(_file))
+        #take first person
         _data = data["people"][0]["pose_keypoints"]
         xy = []
         #ignore confidence score
@@ -50,6 +56,7 @@ def read_openpose_json(smooth=True, *args):
 
         # get frame index from openpose 12 padding
         frame_indx = re.findall("(\d+)", file_name)
+        logger.debug("found {0} for frame {1}".format(xy, str(int(frame_indx[0]))))
         #add xy to frame
         cache[int(frame_indx[0])] = xy
     plt.figure(1)
@@ -64,7 +71,6 @@ def read_openpose_json(smooth=True, *args):
 
     logger.info("start smoothing")
     ### smooth by median value, 4 frames 
-    last_x_med, last_y_med = [[range(4)] for _ in range(2)]
     for frame, xy in cache.items():
         forward,back = ([] for _ in range(2))
         _len = len(xy) # 36
@@ -78,11 +84,11 @@ def read_openpose_json(smooth=True, *args):
         elif frame in last_4_frame:
             for back_range in range(1,4):
                 back += cache[frame-forward_range]
-        # between frames, get value of xy in bi-directional frames(current frame -+ 4)     
+        # between frames, get value of xy in bi-directional frames(current frame -+ 5)     
         else:
-            for forward_range in range(1,4):
+            for forward_range in range(1,5):
                 forward += cache[frame+forward_range]
-            for back_range in range(1,4):
+            for back_range in range(1,5):
                 back += cache[frame-forward_range]
 
         # build frame range vector 
@@ -95,16 +101,18 @@ def read_openpose_json(smooth=True, *args):
             y = x+1
             if frame in first_4_frame:
                 # get vector of 4 frames forward for x and y, incl. current frame
-                x_v = [xy[x], forward[x], forward[x+_len], forward[x+_len+_len]]
-                y_v = [xy[y], forward[y], forward[y+_len], forward[y+_len+_len]]
+                x_v = [xy[x], forward[x], forward[x+_len], forward[x+_len*2]]
+                y_v = [xy[y], forward[y], forward[y+_len], forward[y+_len*2]]
             elif frame in last_4_frame:
                 # get vector of 4 frames back for x and y, incl. current frame
-                x_v =[xy[x], back[x], back[x+_len], back[x+_len+_len]]
-                y_v =[xy[y], back[y], back[y+_len], back[y+_len+_len]]
+                x_v =[xy[x], back[x], back[x+_len], back[x+_len*2]]
+                y_v =[xy[y], back[y], back[y+_len], back[y+_len*2]]
             else:
                 # get vector of 4 frames forward/back for x and y, incl. current frame
-                x_v =[xy[x], forward[x], forward[x+_len], forward[x+_len+_len], back[x], back[x+_len], back[x+_len+_len]]
-                y_v =[xy[y], forward[y], forward[y+_len], forward[y+_len+_len], back[y], back[y+_len], back[y+_len+_len]]
+                x_v =[xy[x], forward[x], forward[x+_len], forward[x+_len*2], forward[x+_len*3],
+                        back[x], back[x+_len], back[x+_len*2], back[x+_len*3]]
+                y_v =[xy[y], forward[y], forward[y+_len], forward[y+_len*2], forward[y+_len*3],
+                        back[y], back[y+_len], back[y+_len*2], back[y+_len*3]]
 
             # get median of vector
             x_med = np.median(sorted(x_v))
@@ -138,6 +146,7 @@ def read_openpose_json(smooth=True, *args):
 
 def main(_):
     smoothed = read_openpose_json()
+    logger.info("reading and smoothing done. start feeding 3d-pose-baseline")
     plt.figure(2)
     smooth_curves_plot = show_anim_curves(smoothed, plt)
     pngName = 'png/smooth_plot.png'
@@ -160,10 +169,11 @@ def main(_):
     with tf.Session(config=tf.ConfigProto(
             device_count=device_count,
             allow_soft_placement=True)) as sess:
+        #plt.figure(3)
         batch_size = 128
         model = create_model(sess, actions, batch_size)
         for n, (frame, xy) in enumerate(smoothed.items()):
-            logger.info("frame {0}".format(frame))
+            logger.info("calc frame {0}".format(frame))
             # map list into np array  
             joints_array = np.zeros((1, 36))
             joints_array[0] = [0 for i in range(36)]
@@ -233,14 +243,14 @@ def main(_):
             viz.show3Dpose(p3d, ax, lcolor="#9b59b6", rcolor="#2ecc71")
 
             pngName = 'png/test_{0}.png'.format(str(frame))
-            logger.debug("Save image {0}".format(pngName))
             plt.savefig(pngName)
             png_lib.append(imageio.imread(pngName))
             before_pose = poses3d
 
-    logger.debug("Save Gif {0}".format(pngName))
-    imageio.mimsave('png/movie_smoothing.gif', png_lib, fps=FLAGS.gif_fps)
 
+    logger.info("creating Gif {0}, please Wait!".format(pngName))
+    imageio.mimsave('png/movie_smoothing.gif', png_lib, fps=FLAGS.gif_fps)
+    logger.info("Done!".format(pngName))
 
 
 if __name__ == "__main__":
