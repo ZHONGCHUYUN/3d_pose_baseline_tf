@@ -69,31 +69,45 @@ def read_openpose_json(smooth=True, *args):
         # return frames cache incl. 18 joints (x,y)
         return cache
 
+    if len(json_files) == 1:
+        logger.info("found single json file")
+        # return frames cache incl. 18 joints (x,y) on single image\json
+        return cache
+
+    if len(json_files) <= 8:
+        raise Exception("need more frames, min 9 frames/json files for smoothing!!!")
+
     logger.info("start smoothing")
+
     # create frame blocks
     first_frame_block = [int(re.findall("(\d+)", o)[0]) for o in json_files[:4]]
     last_frame_block = [int(re.findall("(\d+)", o)[0]) for o in json_files[-4:]]
+
     ### smooth by median value, n frames 
     for frame, xy in cache.items():
-        forward,back = ([] for _ in range(2))
+
+        # create neighbor array based on frame index
+        forward, back = ([] for _ in range(2))
+
+        # joints x,y array
         _len = len(xy) # 36
+
         # create array of parallel frames (-3<n>3)
-        for forward_range in range(1,4):
+        for neighbor in range(1,4):
             # first n frames, get value of xy in postive lookahead frames(current frame + 3)
             if frame in first_frame_block:
-                forward += cache[frame+forward_range]
+                forward += cache[frame+neighbor]
             # last n frames, get value of xy in negative lookahead frames(current frame - 3)
             elif frame in last_frame_block:
-                back += cache[frame-forward_range]
+                back += cache[frame-neighbor]
             else:
                 # between frames, get value of xy in bi-directional frames(current frame -+ 3)     
-                forward += cache[frame+forward_range]
-                back += cache[frame-forward_range]
+                forward += cache[frame+neighbor]
+                back += cache[frame-neighbor]
 
         # build frame range vector 
         frames_joint_median = [0 for i in range(_len)]
         # more info about mapping in src/data_utils.py
-
         # for each 18joints*x,y  (x1,y1,x2,y2,...)~36 
         for x in range(0,_len,2):
             # set x and y
