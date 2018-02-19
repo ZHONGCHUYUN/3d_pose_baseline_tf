@@ -71,27 +71,23 @@ def read_openpose_json(smooth=True, *args):
 
     logger.info("start smoothing")
     # create frame blocks
-    first_frame_block = [int(re.findall("(\d+)", o)[0]) for o in json_files[:6]]
-    last_frame_block = [int(re.findall("(\d+)", o)[0]) for o in json_files[-6:]]
+    first_frame_block = [int(re.findall("(\d+)", o)[0]) for o in json_files[:4]]
+    last_frame_block = [int(re.findall("(\d+)", o)[0]) for o in json_files[-4:]]
     ### smooth by median value, n frames 
     for frame, xy in cache.items():
         forward,back = ([] for _ in range(2))
         _len = len(xy) # 36
         # create array of parallel frames (-3<n>3)
-        # first n frames, get value of xy in postive lookahead frames(current frame + 3)
-        if frame in first_frame_block:
-            for forward_range in range(1,4):
+        for forward_range in range(1,4):
+            # first n frames, get value of xy in postive lookahead frames(current frame + 3)
+            if frame in first_frame_block:
                 forward += cache[frame+forward_range]
-
-        # last n frames, get value of xy in negative lookahead frames(current frame - 3)
-        elif frame in last_frame_block:
-            for back_range in range(1,4):
+            # last n frames, get value of xy in negative lookahead frames(current frame - 3)
+            elif frame in last_frame_block:
                 back += cache[frame-forward_range]
-        # between frames, get value of xy in bi-directional frames(current frame -+ 6)     
-        else:
-            for forward_range in range(1,7):
+            else:
+                # between frames, get value of xy in bi-directional frames(current frame -+ 3)     
                 forward += cache[frame+forward_range]
-            for back_range in range(1,7):
                 back += cache[frame-forward_range]
 
         # build frame range vector 
@@ -115,10 +111,10 @@ def read_openpose_json(smooth=True, *args):
                 # median value calc: find neighbor frames joint value and sorted them, use numpy median module
                 # frame[x1,y1,[x2,y2],..]frame[x1,y1,[x2,y2],...], frame[x1,y1,[x2,y2],..]
                 #                 ^---------------------|-------------------------^
-                x_v =[xy[x], forward[x], forward[x+_len], forward[x+_len*2], forward[x+_len*3],forward[x+_len*4], forward[x+_len*5],
-                        back[x], back[x+_len], back[x+_len*2], back[x+_len*3], back[x+_len*4], back[x+_len*5]]
-                y_v =[xy[y], forward[y], forward[y+_len], forward[y+_len*2], forward[y+_len*3],forward[y+_len*4], forward[y+_len*5],
-                        back[y], back[y+_len], back[y+_len*2], back[y+_len*3], back[y+_len*4], back[y+_len*5]]
+                x_v =[xy[x], forward[x], forward[x+_len], forward[x+_len*2],
+                        back[x], back[x+_len], back[x+_len*2]]
+                y_v =[xy[y], forward[y], forward[y+_len], forward[y+_len*2],
+                        back[y], back[y+_len], back[y+_len*2]]
 
             # get median of vector
             x_med = np.median(sorted(x_v))
@@ -249,7 +245,7 @@ def main(_):
                 poses3d = before_pose
 
             p3d = poses3d
-
+            logger.debug(poses3d)
             viz.show3Dpose(p3d, ax, lcolor="#9b59b6", rcolor="#2ecc71")
 
             pngName = 'png/test_{0}.png'.format(str(frame))
@@ -258,8 +254,8 @@ def main(_):
             before_pose = poses3d
 
 
-    imageio.mimsave('png/movie_smoothing.gif', png_lib, fps=FLAGS.gif_fps)
     logger.info("creating Gif png/movie_smoothing.gif, please Wait!")
+    imageio.mimsave('png/movie_smoothing.gif', png_lib, fps=FLAGS.gif_fps)
     logger.info("Done!".format(pngName))
 
 
