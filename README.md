@@ -67,12 +67,15 @@ This will produce a visualization similar to this:
 
 `python src/openpose_3dpose_sandbox.py --camera_frame --residual --batch_norm --dropout 0.5 --max_norm --evaluateActionWise --use_sh --epochs 200 --load 4874200 --openpose /path/to/openpose/output/json_directory --gif_fps 30` , optional also `--verbose 3` for debug,
 
-smoothing curves by median value
+frame drops
 
 ![Fps drops](/imgs/dirty_plot.png?raw=1)
 
-![Smoothing Fps](/imgs/smooth_plot.png?raw=1)
+holding
+![holding](/imgs/smooth_plot.png?raw=1)
 
+interpolation
+![interpolate](/imgs/interpolate_plot.png?raw=1)
 
 ### Training
 

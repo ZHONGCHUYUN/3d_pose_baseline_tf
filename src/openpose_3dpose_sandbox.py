@@ -12,6 +12,11 @@ from predict_3dpose import create_model
 import cv2
 import imageio
 import logging
+import scipy as sp
+from pprint import pprint
+from scipy.interpolate import interp1d
+from scipy.interpolate import UnivariateSpline
+
 FLAGS = tf.app.flags.FLAGS
 
 order = [15, 12, 25, 26, 27, 17, 18, 19, 1, 2, 3, 6, 7, 8]
@@ -153,20 +158,70 @@ def read_openpose_json(smooth=True, *args):
             # build new array of joint x and y value
             frames_joint_median[x] = x_med 
             frames_joint_median[x+1] = y_med 
-
+		
 
         smoothed[frame] = frames_joint_median
 
-    # return frames cache incl. smooth 18 joints (x,y)
     return smoothed
 
+
 def main(_):
+    
     smoothed = read_openpose_json()
     logger.info("reading and smoothing done. start feeding 3d-pose-baseline")
     plt.figure(2)
     smooth_curves_plot = show_anim_curves(smoothed, plt)
     pngName = 'png/smooth_plot.png'
     smooth_curves_plot.savefig(pngName)
+    
+    if FLAGS.interpolation:
+        framerange = len( smoothed.keys() )
+        joint_rows = 36
+        array = np.concatenate(list(smoothed.values()))
+        array_reshaped = np.reshape(array, (framerange, joint_rows) )
+    
+        multiplier = 0.1
+        multiplier_inv = 1/multiplier
+        out_array = np.array([])
+        for row in range(joint_rows):
+            x = []
+            for frame in range(framerange):
+                x.append( array_reshaped[frame, row] )
+            
+            frame = range( framerange )
+            frame_resampled = np.arange(0, framerange, multiplier)
+            spl = UnivariateSpline(frame, x, k=3)
+            min_x, max_x = min(x), max(x)
+            smooth_fac = max_x - min_x
+            smooth_fac = smooth_fac * 125
+            spl.set_smoothing_factor( float(smooth_fac) )
+            xnew = spl(frame_resampled)
+            
+            out_array = np.append(out_array, xnew)
+    
+        logger.info("done interpolating")
+    
+        a = np.array([])
+        for frame in range( int( framerange * multiplier_inv ) ):
+            jnt_array = []
+            #print(frame)
+            for jnt in range(joint_rows):
+                jnt_array.append( out_array[ jnt * int(framerange * multiplier_inv) + frame] )
+            a = np.append(a, jnt_array)
+        
+        a = np.reshape(a, (int(framerange * multiplier_inv), joint_rows))
+        out_array = a
+    
+        interpolate_smoothed = {}
+        for frame in range( int(framerange * multiplier_inv) ):
+            interpolate_smoothed[frame] = list( out_array[frame] )
+        
+        plt.figure(3)
+        smoothed = interpolate_smoothed
+        interpolate_curves_plot = show_anim_curves(smoothed, plt)
+        pngName = 'png/interpolate_plot.png'
+        interpolate_curves_plot.savefig(pngName)
+
 
     enc_in = np.zeros((1, 64))
     enc_in[0] = [0 for i in range(64)]
@@ -232,22 +287,22 @@ def main(_):
             all_poses_3d.append( poses3d )
             enc_in, poses3d = map( np.vstack, [enc_in, all_poses_3d] )
             subplot_idx, exidx = 1, 1
-            max = 0
-            min = 10000
+            _max = 0
+            _min = 10000
 
             for i in range(poses3d.shape[0]):
                 for j in range(32):
                     tmp = poses3d[i][j * 3 + 2]
                     poses3d[i][j * 3 + 2] = poses3d[i][j * 3 + 1]
                     poses3d[i][j * 3 + 1] = tmp
-                    if poses3d[i][j * 3 + 2] > max:
-                        max = poses3d[i][j * 3 + 2]
-                    if poses3d[i][j * 3 + 2] < min:
-                        min = poses3d[i][j * 3 + 2]
+                    if poses3d[i][j * 3 + 2] > _max:
+                        _max = poses3d[i][j * 3 + 2]
+                    if poses3d[i][j * 3 + 2] < _min:
+                        _min = poses3d[i][j * 3 + 2]
 
             for i in range(poses3d.shape[0]):
                 for j in range(32):
-                    poses3d[i][j * 3 + 2] = max - poses3d[i][j * 3 + 2] + min
+                    poses3d[i][j * 3 + 2] = _max - poses3d[i][j * 3 + 2] + _min
                     poses3d[i][j * 3] += (spine_x - 630)
                     poses3d[i][j * 3 + 2] += (500 - spine_y)
 
@@ -262,14 +317,15 @@ def main(_):
             logger.debug(poses3d)
             viz.show3Dpose(p3d, ax, lcolor="#9b59b6", rcolor="#2ecc71")
 
-            pngName = 'png/test_{0}.png'.format(str(frame))
-            plt.savefig(pngName)
+            pngName = 'png/test_{0}.png'.format(str(frame.zfill(5)))
+            if FLAGS.write_output_img:
+                plt.savefig(pngName)
             png_lib.append(imageio.imread(pngName))
             before_pose = poses3d
 
-
-    logger.info("creating Gif png/movie_smoothing.gif, please Wait!")
-    imageio.mimsave('png/movie_smoothing.gif', png_lib, fps=FLAGS.gif_fps)
+    if FLAGS.write_gif:
+        logger.info("creating Gif png/movie_smoothing.gif, please Wait!")
+        imageio.mimsave('png/movie_smoothing.gif', png_lib, fps=FLAGS.gif_fps)
     logger.info("Done!".format(pngName))
 
 
