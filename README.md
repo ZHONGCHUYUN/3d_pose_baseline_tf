@@ -55,18 +55,28 @@ This will produce a visualization similar to this:
 ### OpenPose to 3d-Pose-Baseline
 
 <p align="center">
-    <img src="/imgs/open_pose_input.gif", width="360"> <img src="/imgs/output.gif", width="360"> <img src="/imgs/interpolation.gif", width="360">
+    <img src="/imgs/open_pose_input.gif", width="360">
 </p>
 
+Result(Frame Holding)
+<p align="center">
+	<img src="/imgs/output.gif", width="360">
+</p>
+
+Result(Interpolation)
+<p align="center">
+	<img src="/imgs/interpolation.gif", width="360">
+</p>
 
 1. Setup [OpenPose](https://github.com/ArashHosseini/openpose) and use `--write_json` flag to export Pose Keypoints. 
 2. Download Pre-trained model below, simply run
 
 `python src/openpose_3dpose_sandbox.py --camera_frame --residual --batch_norm --dropout 0.5 --max_norm --evaluateActionWise --use_sh --epochs 200 --load 4874200 --openpose /path/to/openpose/output/json_directory --write_gif `  optional also `--verbose 3` for debug and for interpolation add `--interpolation` and use `--multiplier` flag to set the interpolated frame range. 
 
-frame drops, -holding, -interpolation
 
-![Fps drops](/imgs/dirty_plot.png?raw=1) ![holding](/imgs/smooth_plot.png?raw=2) ![interpolate](/imgs/interpolate_plot.png?raw=3)
+output, holding, interpolation
+
+![Fps drops](/imgs/dirty_plot.png?raw=1)![holding](/imgs/smooth_plot.png?raw=2) ![interpolate](/imgs/interpolate_plot.png?raw=3)
 
 ### Training
 
