@@ -8,6 +8,7 @@ import re
 import cameras
 import json
 import os
+import time
 from predict_3dpose import create_model
 import cv2
 import imageio
@@ -38,7 +39,7 @@ def read_openpose_json(smooth=True, *args):
     # [x1,y1,c1,x2,y2,c2,...]
     # ignore confidence score, take x and y [x1,y1,x2,y2,...]
 
-    logger.info("start reading data")
+    logger.info("start reading openpose files")
     #load json files
     json_files = os.listdir(openpose_output_dir)
     # check for other file types
@@ -66,8 +67,9 @@ def read_openpose_json(smooth=True, *args):
         cache[int(frame_indx[0])] = xy
     plt.figure(1)
     drop_curves_plot = show_anim_curves(cache, plt)
-    pngName = 'png/dirty_plot.png'
+    pngName = 'gif_output/dirty_plot.png'
     drop_curves_plot.savefig(pngName)
+    logger.info('writing gif_output/dirty_plot.png')
 
     # exit if no smoothing
     if not smooth:
@@ -85,8 +87,8 @@ def read_openpose_json(smooth=True, *args):
     logger.info("start smoothing")
 
     # create frame blocks
-    first_frame_block = [int(re.findall("(\d+)", o)[0]) for o in json_files[:4]]
-    last_frame_block = [int(re.findall("(\d+)", o)[0]) for o in json_files[-4:]]
+    head_frame_block = [int(re.findall("(\d+)", o)[0]) for o in json_files[:4]]
+    tail_frame_block = [int(re.findall("(\d+)", o)[0]) for o in json_files[-4:]]
 
     ### smooth by median value, n frames 
     for frame, xy in cache.items():
@@ -100,10 +102,10 @@ def read_openpose_json(smooth=True, *args):
         # create array of parallel frames (-3<n>3)
         for neighbor in range(1,4):
             # first n frames, get value of xy in postive lookahead frames(current frame + 3)
-            if frame in first_frame_block:
+            if frame in head_frame_block:
                 forward += cache[frame+neighbor]
             # last n frames, get value of xy in negative lookahead frames(current frame - 3)
-            elif frame in last_frame_block:
+            elif frame in tail_frame_block:
                 back += cache[frame-neighbor]
             else:
                 # between frames, get value of xy in bi-directional frames(current frame -+ 3)     
@@ -117,11 +119,11 @@ def read_openpose_json(smooth=True, *args):
         for x in range(0,_len,2):
             # set x and y
             y = x+1
-            if frame in first_frame_block:
+            if frame in head_frame_block:
                 # get vector of n frames forward for x and y, incl. current frame
                 x_v = [xy[x], forward[x], forward[x+_len], forward[x+_len*2]]
                 y_v = [xy[y], forward[y], forward[y+_len], forward[y+_len*2]]
-            elif frame in last_frame_block:
+            elif frame in tail_frame_block:
                 # get vector of n frames back for x and y, incl. current frame
                 x_v =[xy[x], back[x], back[x+_len], back[x+_len*2]]
                 y_v =[xy[y], back[y], back[y+_len], back[y+_len*2]]
@@ -168,20 +170,23 @@ def read_openpose_json(smooth=True, *args):
 def main(_):
     
     smoothed = read_openpose_json()
-    logger.info("reading and smoothing done. start feeding 3d-pose-baseline")
     plt.figure(2)
     smooth_curves_plot = show_anim_curves(smoothed, plt)
-    pngName = 'png/smooth_plot.png'
+    pngName = 'gif_output/smooth_plot.png'
     smooth_curves_plot.savefig(pngName)
+    logger.info('writing gif_output/smooth_plot.png')
     
     if FLAGS.interpolation:
+        logger.info("start interpolation")
+
         framerange = len( smoothed.keys() )
         joint_rows = 36
         array = np.concatenate(list(smoothed.values()))
         array_reshaped = np.reshape(array, (framerange, joint_rows) )
     
-        multiplier = 0.1
+        multiplier = FLAGS.multiplier
         multiplier_inv = 1/multiplier
+
         out_array = np.array([])
         for row in range(joint_rows):
             x = []
@@ -191,20 +196,21 @@ def main(_):
             frame = range( framerange )
             frame_resampled = np.arange(0, framerange, multiplier)
             spl = UnivariateSpline(frame, x, k=3)
+            #relative smooth factor based on jnt anim curve
             min_x, max_x = min(x), max(x)
             smooth_fac = max_x - min_x
-            smooth_fac = smooth_fac * 125
+            smooth_resamp = 125
+            smooth_fac = smooth_fac * smooth_resamp
             spl.set_smoothing_factor( float(smooth_fac) )
             xnew = spl(frame_resampled)
             
             out_array = np.append(out_array, xnew)
     
-        logger.info("done interpolating")
+        logger.info("done interpolating. reshaping {0} frames,  please wait!!".format(framerange))
     
         a = np.array([])
         for frame in range( int( framerange * multiplier_inv ) ):
             jnt_array = []
-            #print(frame)
             for jnt in range(joint_rows):
                 jnt_array.append( out_array[ jnt * int(framerange * multiplier_inv) + frame] )
             a = np.append(a, jnt_array)
@@ -219,9 +225,9 @@ def main(_):
         plt.figure(3)
         smoothed = interpolate_smoothed
         interpolate_curves_plot = show_anim_curves(smoothed, plt)
-        pngName = 'png/interpolate_plot.png'
+        pngName = 'gif_output/interpolate_{0}.png'.format(smooth_resamp)
         interpolate_curves_plot.savefig(pngName)
-
+        logger.info('writing gif_output/interpolate_plot.png')
 
     enc_in = np.zeros((1, 64))
     enc_in[0] = [0 for i in range(64)]
@@ -243,8 +249,9 @@ def main(_):
         #plt.figure(3)
         batch_size = 128
         model = create_model(sess, actions, batch_size)
+        iter_range = len(smoothed.keys())
         for n, (frame, xy) in enumerate(smoothed.items()):
-            logger.info("calc frame {0}".format(frame))
+            logger.info("calc frame {0}/{1}".format(frame, iter_range))
             # map list into np array  
             joints_array = np.zeros((1, 36))
             joints_array[0] = [0 for i in range(36)]
@@ -317,15 +324,18 @@ def main(_):
             logger.debug(poses3d)
             viz.show3Dpose(p3d, ax, lcolor="#9b59b6", rcolor="#2ecc71")
 
-            pngName = 'png/test_{0}.png'.format(str(frame.zfill(5)))
-            if FLAGS.write_output_img:
-                plt.savefig(pngName)
-            png_lib.append(imageio.imread(pngName))
+            pngName = 'png/pose_frame_{0}.png'.format(str(frame).zfill(12))
+            plt.savefig(pngName)
+            if FLAGS.write_gif:
+                png_lib.append(imageio.imread(pngName))
             before_pose = poses3d
 
     if FLAGS.write_gif:
-        logger.info("creating Gif png/movie_smoothing.gif, please Wait!")
-        imageio.mimsave('png/movie_smoothing.gif', png_lib, fps=FLAGS.gif_fps)
+        if FLAGS.interpolation:
+            #take every frame on gif_fps * multiplier_inv
+            png_lib = np.array([png_lib[png_image] for png_image in range(0,len(png_lib), int(multiplier_inv)) ])
+        logger.info("creating Gif png/animation.gif, please Wait!")
+        imageio.mimsave('gif_output/animation.gif', png_lib, fps=FLAGS.gif_fps)
     logger.info("Done!".format(pngName))
 
 

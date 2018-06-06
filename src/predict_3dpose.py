@@ -53,8 +53,8 @@ tf.app.flags.DEFINE_string("train_dir", "experiments", "Training directory.")
 
 # openpose
 tf.app.flags.DEFINE_string("openpose", "openpose_output", "openpose output Data directory")
-tf.app.flags.DEFINE_boolean("interpolation", True, "interpolate openpose json")
-tf.app.flags.DEFINE_boolean("write_output_img", False, "write predicted frame png image")
+tf.app.flags.DEFINE_boolean("interpolation", False, "interpolate openpose json")
+tf.app.flags.DEFINE_float("multiplier", 0.1, "interpolation frame range")
 tf.app.flags.DEFINE_boolean("write_gif", False, "write final anim gif")
 tf.app.flags.DEFINE_integer("gif_fps", 30, "output gif framerate")
 tf.app.flags.DEFINE_integer("verbose", 2, "0:Error, 1:Warning, 2:INFO*(default), 3:debug")
