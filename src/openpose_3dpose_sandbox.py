@@ -53,7 +53,10 @@ def read_openpose_json(smooth=True, *args):
         if not os.path.isfile(_file): raise Exception("No file found!!, {0}".format(_file))
         data = json.load(open(_file))
         #take first person
-        _data = data["people"][0]["pose_keypoints"]
+        _data = data["people"][0]["pose_keypoints_2d"]
+        if len(_data)>54:
+           raise Exception("not supporting Body_25 model \n add model_pose flag like \
+                           ./build/examples/openpose/openpose.bin ... --model_pose COCO on openpose usage")
         xy = []
         #ignore confidence score
         for o in range(0,len(_data),3):
