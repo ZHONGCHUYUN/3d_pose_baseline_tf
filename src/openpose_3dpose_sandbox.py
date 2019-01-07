@@ -54,6 +54,7 @@ def read_openpose_json(smooth=True, *args):
         data = json.load(open(_file))
         #take first person
         _data = data["people"][0]["pose_keypoints_2d"]
+        
         xy = []
         #ignore confidence score
         for o in range(0,len(_data),3):
