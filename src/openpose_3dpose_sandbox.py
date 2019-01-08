@@ -66,7 +66,7 @@ def read_openpose_json(smooth=True, *args):
         logger.debug("found {0} for frame {1}".format(xy, str(int(frame_indx[0]))))
 
         #body_25 support, convert body_25 output format to coco
-        if len(xy)>54:
+        if len(_data)>54:
             _xy = xy[0:19*2]
             for x in range(len(xy)):
                 #del jnt 8
