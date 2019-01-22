@@ -74,7 +74,7 @@ def main(_):
                     xy.append(_data[o+1])
 
                 frame_indx = re.findall("(\d+)", file_name)
-                frame = int(frame_indx[0])
+                frame = int(frame_indx[-1])
                 logger.debug("found {0} for frame {1}".format(xy, str(frame)))
 
                 #body_25 support, convert body_25 output format to coco

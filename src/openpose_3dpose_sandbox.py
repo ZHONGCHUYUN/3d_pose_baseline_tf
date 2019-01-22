@@ -63,7 +63,7 @@ def read_openpose_json(smooth=True, *args):
 
         # get frame index from openpose 12 padding
         frame_indx = re.findall("(\d+)", file_name)
-        logger.debug("found {0} for frame {1}".format(xy, str(int(frame_indx[0]))))
+        logger.debug("found {0} for frame {1}".format(xy, str(int(frame_indx[-1]))))
 
         #body_25 support, convert body_25 output format to coco
         if len(_data)>54:
@@ -118,7 +118,7 @@ def read_openpose_json(smooth=True, *args):
             xy = _xy
 
         #add xy to frame
-        cache[int(frame_indx[0])] = xy
+        cache[int(frame_indx[-1])] = xy
 
     plt.figure(1)
     drop_curves_plot = show_anim_curves(cache, plt)
@@ -142,8 +142,8 @@ def read_openpose_json(smooth=True, *args):
     logger.info("start smoothing")
 
     # create frame blocks
-    head_frame_block = [int(re.findall("(\d+)", o)[0]) for o in json_files[:4]]
-    tail_frame_block = [int(re.findall("(\d+)", o)[0]) for o in json_files[-4:]]
+    head_frame_block = [int(re.findall("(\d+)", o)[-1]) for o in json_files[:4]]
+    tail_frame_block = [int(re.findall("(\d+)", o)[-1]) for o in json_files[-4:]]
 
     ### smooth by median value, n frames 
     for frame, xy in cache.items():
