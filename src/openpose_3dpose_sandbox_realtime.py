@@ -68,10 +68,15 @@ def main(_):
                 #take first person
                 _data = data["people"][0]["pose_keypoints_2d"]
                 xy = []
-                #ignore confidence score
-                for o in range(0,len(_data),3):
-                    xy.append(_data[o])
-                    xy.append(_data[o+1])
+                if len(_data)>=53:
+                    #openpose incl. confidence score
+                    #ignore confidence score
+                    for o in range(0,len(_data),3):
+                        xy.append(_data[o])
+                        xy.append(_data[o+1])
+                else:
+                    #tf-pose-estimation
+                    xy = _data
 
                 frame_indx = re.findall("(\d+)", file_name)
                 frame = int(frame_indx[-1])
@@ -219,7 +224,7 @@ def main(_):
 
 if __name__ == "__main__":
 
-    openpose_output_dir = FLAGS.openpose
+    openpose_output_dir = FLAGS.pose_estimation_json
     
     level = {0:logging.ERROR,
              1:logging.WARNING,

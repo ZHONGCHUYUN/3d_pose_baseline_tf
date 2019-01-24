@@ -39,7 +39,7 @@ def read_openpose_json(smooth=True, *args):
     # [x1,y1,c1,x2,y2,c2,...]
     # ignore confidence score, take x and y [x1,y1,x2,y2,...]
 
-    logger.info("start reading openpose files")
+    logger.info("start reading json files")
     #load json files
     json_files = os.listdir(openpose_output_dir)
     # check for other file types
@@ -56,10 +56,15 @@ def read_openpose_json(smooth=True, *args):
         _data = data["people"][0]["pose_keypoints_2d"]
         
         xy = []
-        #ignore confidence score
-        for o in range(0,len(_data),3):
-            xy.append(_data[o])
-            xy.append(_data[o+1])
+        if len(_data)>=53:
+            #openpose incl. confidence score
+            #ignore confidence score
+            for o in range(0,len(_data),3):
+                xy.append(_data[o])
+                xy.append(_data[o+1])
+        else:
+            #tf-pose-estimation
+            xy = _data
 
         # get frame index from openpose 12 padding
         frame_indx = re.findall("(\d+)", file_name)
@@ -390,14 +395,14 @@ def main(_):
         if FLAGS.interpolation:
             #take every frame on gif_fps * multiplier_inv
             png_lib = np.array([png_lib[png_image] for png_image in range(0,len(png_lib), int(multiplier_inv)) ])
-        logger.info("creating Gif png/animation.gif, please Wait!")
+        logger.info("creating Gif gif_output/animation.gif, please Wait!")
         imageio.mimsave('gif_output/animation.gif', png_lib, fps=FLAGS.gif_fps)
     logger.info("Done!".format(pngName))
 
 
 if __name__ == "__main__":
 
-    openpose_output_dir = FLAGS.openpose
+    openpose_output_dir = FLAGS.pose_estimation_json
     
     level = {0:logging.ERROR,
              1:logging.WARNING,
