@@ -52,7 +52,7 @@ This will produce a visualization similar to this:
 ![Visualization example](/imgs/viz_example.png?raw=1)
 
 
-### OpenPose to 3d-Pose-Baseline (COCO and Body_25 output format support)
+### [openpose](https://github.com/ArashHosseini/openpose) or [tf-pose-estimation](https://github.com/ArashHosseini/tf-pose-estimation) to 3d-Pose-Baseline (COCO and Body_25 output format support)
 
 <p align="center">
     <img src="/imgs/open_pose_input.gif", width="360">
@@ -68,13 +68,17 @@ Result(Interpolation)
 	<img src="/imgs/interpolation.gif", width="360">
 </p>
 
-1. Setup [OpenPose](https://github.com/ArashHosseini/openpose) and use `--write_json` flag to export Pose Keypoints. 
-2. Download Pre-trained model below, simply run
+1. setup [openpose](https://github.com/ArashHosseini/openpose) and use `--write_json` flag to export Pose Keypoints.
 
-`python src/openpose_3dpose_sandbox.py --camera_frame --residual --batch_norm --dropout 0.5 --max_norm --evaluateActionWise --use_sh --epochs 200 --load 4874200 --openpose /path/to/openpose/output/json_directory --write_gif --gif_fps 24 `, optional `--verbose 3` for debug and for interpolation add `--interpolation` and use `--multiplier`.  
+or 
+
+2.fork [tf-pose-estimation](https://github.com/ArashHosseini/tf-pose-estimation) and use `--output_json` flag to export Pose Keypoints, check [diff](https://github.com/ArashHosseini/tf-pose-estimation/commit/eb25b197b3c0ed2d424513dbbe2565e910a736d1)
+
+3. Download Pre-trained model below, simply run
+
+`python src/openpose_3dpose_sandbox.py --camera_frame --residual --batch_norm --dropout 0.5 --max_norm --evaluateActionWise --use_sh --epochs 200 --load 4874200 --pose_estimation_json /path/to/openpose/output/json_directory --write_gif --gif_fps 24 `, optional `--verbose 3` for debug and for interpolation add `--interpolation` and use `--multiplier`.  
 
 
-output, holding, interpolation
 
 ![Fps drops](/imgs/dirty_plot.png?raw=1)![holding](/imgs/smooth_plot.png?raw=2) ![interpolate](/imgs/interpolate_plot.png?raw=3)
 
