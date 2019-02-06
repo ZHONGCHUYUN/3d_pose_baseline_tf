@@ -54,19 +54,23 @@ This will produce a visualization similar to this:
 
 ### [openpose](https://github.com/ArashHosseini/openpose) or [tf-pose-estimation](https://github.com/ArashHosseini/tf-pose-estimation) to 3d-Pose-Baseline (COCO and Body_25 output format support)
 
-1. setup [openpose](https://github.com/ArashHosseini/openpose) and use `--write_json` flag to export Pose Keypoints.
+1. setup [openpose](https://github.com/CMU-Perceptual-Computing-Lab/openpose.git) and use `--write_json` flag to export Pose Keypoints.
 
 or 
 
 2. fork [tf-pose-estimation](https://github.com/ArashHosseini/tf-pose-estimation) and add `--output_json` flag to export Pose Keypoints like `python run_webcam.py --model=mobilenet_thin --resize=432x368 --camera=0 --output_json /path/to/directory`, check [diff](https://github.com/ArashHosseini/tf-pose-estimation/commit/eb25b197b3c0ed2d424513dbbe2565e910a736d1)
 
-3. Download Pre-trained model below
+or
 
-4. simply run
+3. fork [keras_Realtime_Multi-Person_Pose_Estimation](https://github.com/ArashHosseini/keras_Realtime_Multi-Person_Pose_Estimation) and use `python3.5 demo_image.py --image sample_images/p1.jpg`, check [diff](https://github.com/ArashHosseini/keras_Realtime_Multi-Person_Pose_Estimation/commit/b5c76a35239aa7496010ff7f5e0b5fc0a9cf59a0)
+
+4. Download Pre-trained model below
+
+5. simply run
 
 `python src/openpose_3dpose_sandbox.py --camera_frame --residual --batch_norm --dropout 0.5 --max_norm --evaluateActionWise --use_sh --epochs 200 --load 4874200 --pose_estimation_json /path/to/json_directory --write_gif --gif_fps 24 `, optional `--verbose 3` for debug and for interpolation add `--interpolation` and use `--multiplier`. 
 
-5. or for 'Real Time', run
+6. or for 'Real Time'
 
 `python3.5 src/openpose_3dpose_sandbox_realtime.py --camera_frame --residual --batch_norm --dropout 0.5 --max_norm --evaluateActionWise --use_sh --epochs 200 --load 4874200 --pose_estimation_json /path/to/json_directory `
 
