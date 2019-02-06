@@ -55,16 +55,20 @@ This will produce a visualization similar to this:
 ### [openpose](https://github.com/CMU-Perceptual-Computing-Lab/openpose.git)/[tf-pose-estimation](https://github.com/ArashHosseini/tf-pose-estimation)/[keras_Realtime_Multi-Person_Pose_Estimation](https://github.com/ArashHosseini/keras_Realtime_Multi-Person_Pose_Estimation) to 3d-Pose-Baseline
 
 
-###Caffe
+### Caffe
+
 1. setup [openpose](https://github.com/CMU-Perceptual-Computing-Lab/openpose.git) and use `--write_json` flag to export Pose Keypoints.
 
 or
 
-###Tensorflow
+### Tensorflow
+
 2. fork [tf-pose-estimation](https://github.com/ArashHosseini/tf-pose-estimation) and add `--output_json` flag to export Pose Keypoints like `python run_webcam.py --model=mobilenet_thin --resize=432x368 --camera=0 --output_json /path/to/directory`, check [diff](https://github.com/ArashHosseini/tf-pose-estimation/commit/eb25b197b3c0ed2d424513dbbe2565e910a736d1)
 
 or
-###Keras
+
+### Keras
+
 3. fork [keras_Realtime_Multi-Person_Pose_Estimation](https://github.com/ArashHosseini/keras_Realtime_Multi-Person_Pose_Estimation) and use `python demo_image.py --image sample_images/p1.jpg` for single image or `python demo_camera.py` for webcam feed. check [keypoints diff](https://github.com/ArashHosseini/keras_Realtime_Multi-Person_Pose_Estimation/commit/b5c76a35239aa7496010ff7f5e0b5fc0a9cf59a0) and [webcam diff](https://github.com/ArashHosseini/keras_Realtime_Multi-Person_Pose_Estimation/commit/3e414e68047fd7575bd8832ba776b0b5a93f2eea) for more info.
 
 4. Download Pre-trained model below
