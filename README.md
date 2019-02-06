@@ -52,7 +52,7 @@ This will produce a visualization similar to this:
 ![Visualization example](/imgs/viz_example.png?raw=1)
 
 
-### [openpose](https://github.com/ArashHosseini/openpose) or [tf-pose-estimation](https://github.com/ArashHosseini/tf-pose-estimation) to 3d-Pose-Baseline (COCO and Body_25 output format support)
+### [openpose](https://github.com/CMU-Perceptual-Computing-Lab/openpose.git)/[tf-pose-estimation](https://github.com/ArashHosseini/tf-pose-estimation)/[keras_Realtime_Multi-Person_Pose_Estimation](https://github.com/ArashHosseini/keras_Realtime_Multi-Person_Pose_Estimation) to 3d-Pose-Baseline
 
 1. setup [openpose](https://github.com/CMU-Perceptual-Computing-Lab/openpose.git) and use `--write_json` flag to export Pose Keypoints.
 
