@@ -62,7 +62,7 @@ or
 
 or
 
-3. fork [keras_Realtime_Multi-Person_Pose_Estimation](https://github.com/ArashHosseini/keras_Realtime_Multi-Person_Pose_Estimation) and use `python3.5 demo_image.py --image sample_images/p1.jpg`, check [diff](https://github.com/ArashHosseini/keras_Realtime_Multi-Person_Pose_Estimation/commit/b5c76a35239aa7496010ff7f5e0b5fc0a9cf59a0)
+3. fork [keras_Realtime_Multi-Person_Pose_Estimation](https://github.com/ArashHosseini/keras_Realtime_Multi-Person_Pose_Estimation) and use `python demo_image.py --image sample_images/p1.jpg` for single image or `python demo_camera.py` for webcam feed. check [keypoints diff](https://github.com/ArashHosseini/keras_Realtime_Multi-Person_Pose_Estimation/commit/b5c76a35239aa7496010ff7f5e0b5fc0a9cf59a0) and [webcam diff](https://github.com/ArashHosseini/keras_Realtime_Multi-Person_Pose_Estimation/commit/3e414e68047fd7575bd8832ba776b0b5a93f2eea) for more info.
 
 4. Download Pre-trained model below
 
