@@ -53,8 +53,7 @@ def read_openpose_json(smooth=True, *args):
         if not os.path.isfile(_file): raise Exception("No file found!!, {0}".format(_file))
         data = json.load(open(_file))
         #take first person
-        _data = data["people"][0]["pose_keypoints_2d"]
-        
+        _data = data["people"][0]["pose_keypoints"]
         xy = []
         if len(_data)>=53:
             #openpose incl. confidence score
@@ -304,6 +303,7 @@ def main(_):
 
     device_count = {"GPU": 1}
     png_lib = []
+    before_pose = None
     with tf.Session(config=tf.ConfigProto(
             device_count=device_count,
             allow_soft_placement=True)) as sess:
@@ -311,6 +311,7 @@ def main(_):
         batch_size = 128
         model = create_model(sess, actions, batch_size)
         iter_range = len(smoothed.keys())
+        export_units = {}
         for n, (frame, xy) in enumerate(smoothed.items()):
             logger.info("calc frame {0}/{1}".format(frame, iter_range))
             # map list into np array  
@@ -377,19 +378,32 @@ def main(_):
             # Plot 3d predictions
             ax = plt.subplot(gs1[subplot_idx - 1], projection='3d')
             ax.view_init(18, -70)    
-            logger.debug(np.min(poses3d))
-            if np.min(poses3d) < -1000:
-                poses3d = before_pose
+
+            if FLAGS.cache_on_fail:
+                if np.min(poses3d) < -1000:
+                    poses3d = before_pose
 
             p3d = poses3d
-            logger.debug(poses3d)
+            to_export = poses3d.tolist()[0]
+            x,y,z = [[] for _ in range(3)]
+            for o in range(0, len(to_export), 3):
+                x.append(to_export[o])
+                y.append(to_export[o+1])
+                z.append(to_export[o+2])
+            export_units[frame]={}
+            for jnt_index, (_x, _y, _z) in enumerate(zip(x,y,z)):
+                export_units[frame][jnt_index] = {"translate": [_x, _y, _z]}
+
+
             viz.show3Dpose(p3d, ax, lcolor="#9b59b6", rcolor="#2ecc71")
 
             pngName = 'png/pose_frame_{0}.png'.format(str(frame).zfill(12))
             plt.savefig(pngName)
             if FLAGS.write_gif:
                 png_lib.append(imageio.imread(pngName))
-            before_pose = poses3d
+
+            if FLAGS.cache_on_fail:
+                before_pose = poses3d
 
     if FLAGS.write_gif:
         if FLAGS.interpolation:
@@ -397,8 +411,13 @@ def main(_):
             png_lib = np.array([png_lib[png_image] for png_image in range(0,len(png_lib), int(multiplier_inv)) ])
         logger.info("creating Gif gif_output/animation.gif, please Wait!")
         imageio.mimsave('gif_output/animation.gif', png_lib, fps=FLAGS.gif_fps)
-    logger.info("Done!".format(pngName))
 
+    _out_file = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'maya/3d_data.json')
+    with open(_out_file, 'w') as outfile:
+        logger.info("exported maya json to {0}".format(_out_file))
+        json.dump(export_units, outfile)
+
+    logger.info("Done!".format(pngName))
 
 if __name__ == "__main__":
 
