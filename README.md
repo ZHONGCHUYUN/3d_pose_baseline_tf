@@ -101,17 +101,9 @@ or
     <img src="/imgs/maya_skl.gif", width="360">
 </p>
 
+7. "real-time" version from openpose > 3d-pose-baseline > maya (soon)
 
-### Results
-
-<p align="center">
-    <img src="/imgs/open_pose_input.gif", width="360">
-</p>
-
-Result(Frame Holding)
-<p align="center">
-	<img src="/imgs/output.gif", width="360">
-</p>
+### Result
 
 Result(Interpolation)
 <p align="center">
