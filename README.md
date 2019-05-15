@@ -97,8 +97,12 @@ or
 
 6. create a imageplane and use created images inside `maya/image_plane/` as sequence.
 
+<p align="center">
+    <img src="/imgs/maya_skl.gif", width="360">
+</p>
 
-### Anim Curves
+
+### Results
 
 <p align="center">
     <img src="/imgs/open_pose_input.gif", width="360">
