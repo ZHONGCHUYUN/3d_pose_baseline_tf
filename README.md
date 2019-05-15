@@ -101,11 +101,11 @@ or
     <img src="/imgs/maya_skl.gif", width="360">
 </p>
 
-7. "real-time" version from openpose > 3d-pose-baseline > maya (soon)
+7. "real-time" stream, openpose > 3d-pose-baseline > maya/unity (soon)
+
 
 ### Result
 
-Result(Interpolation)
 <p align="center">
 	<img src="/imgs/interpolation.gif", width="360">
 </p>

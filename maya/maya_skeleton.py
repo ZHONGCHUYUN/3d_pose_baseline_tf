@@ -5,8 +5,8 @@ import maya.OpenMaya as om
 import math
 import re
 import os
-threed_pose_baseline = "/home/flyn/git/3d-pose-baseline/"
-openpose_images = "/home/flyn/git/3d-pose-baseline/test_images/"
+threed_pose_baseline = "/3d-pose-baseline/"
+openpose_images = "/3d-pose-baseline/test_images/"
 
 #jnt parent mapping dict
 jnt_mapping = { 'root': [{'jnt_11': ['jnt_1','jnt_6']},
@@ -49,7 +49,9 @@ def load_data(data):
                 cmds.setKeyframe("anim_jnt_driver_{0}".format(jnt_id), t=frame, v=trans["translate"][0], at='translateX')
                 cmds.setKeyframe("anim_jnt_driver_{0}".format(jnt_id), t=frame, v=trans["translate"][1], at='translateY')
                 cmds.setKeyframe("anim_jnt_driver_{0}".format(jnt_id), t=frame, v=trans["translate"][2], at='translateZ')
-    # hacking 3d-pose-baseline coord. to maya
+
+    # hacking 3d-pose-baseline coord. to maya 
+    # FIX ME
     cmds.setAttr("drivers.rotateX", -110)
 
 def parent_skeleton():
