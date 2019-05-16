@@ -312,6 +312,7 @@ def main(_):
         model = create_model(sess, actions, batch_size)
         iter_range = len(smoothed.keys())
         export_units = {}
+        twod_export_units = {}
         for n, (frame, xy) in enumerate(smoothed.items()):
             logger.info("calc frame {0}/{1}".format(frame, iter_range))
             # map list into np array  
@@ -320,6 +321,11 @@ def main(_):
             for o in range(len(joints_array[0])):
                 #feed array with xy array
                 joints_array[0][o] = xy[o]
+
+            twod_export_units[frame]={}
+            for abs_b, __n in enumerate(range(0, len(xy),2)):
+                twod_export_units[frame][abs_b] = {"translate": [xy[__n],xy[__n+1]]}
+
             _data = joints_array[0]
             # mapping all body parts or 3d-pose-baseline format
             for i in range(len(order)):
@@ -413,9 +419,13 @@ def main(_):
         imageio.mimsave('gif_output/animation.gif', png_lib, fps=FLAGS.gif_fps)
 
     _out_file = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'maya/3d_data.json')
+    twod_out_file = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'maya/2d_data.json')
     with open(_out_file, 'w') as outfile:
         logger.info("exported maya json to {0}".format(_out_file))
         json.dump(export_units, outfile)
+    with open(twod_out_file, 'w') as outfile:
+        logger.info("exported maya json to {0}".format(twod_out_file))
+        json.dump(twod_export_units, outfile)
 
     logger.info("Done!".format(pngName))
 
