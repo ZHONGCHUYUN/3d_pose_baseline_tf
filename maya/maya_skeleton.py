@@ -71,7 +71,7 @@ def load_data(data):
                 if len(trans["translate"])==3:
                     cmds.setKeyframe("anim_jnt_driver_{0}".format(jnt_id), t=frame, v=trans["translate"][2], at='translateZ')
     # hacking 3d-pose-baseline coord. to maya
-    cmds.setAttr("drivers.rotateX", -180)
+    cmds.setAttr("drivers.rotateX", -110 if three_dim else -180)
 
 def parent_skeleton():
     #parent jnts based on jnt_mapping
