@@ -8,72 +8,66 @@ import os
 
 
 #path to imageplane content
-openpose_images = "/home/flyn/git/3d-pose-baseline/test_images/"
+openpose_images = "/home/flyn/git/3d-pose-baseline/test_images/" # replace it with abs path like "/path/to/bg_images" 
 #path to 3d-pose-baseline
 threed_pose_baseline = "/home/flyn/git/3d-pose-baseline/"
 #for 3d use 3d_data.json and set three_dim to True
-three_dim = False
-input_json_path = os.path.join(threed_pose_baseline, "maya/{0}.json".format("3d_data" if three_dim else "2d_data") )
+input_json_path = [os.path.join(threed_pose_baseline, "maya/{0}.json".format(_data)) for _data in ["3d_data", "2d_data"]] # replace it with abs path like "/path/to/2d_data.json" 
 
-#jnt parent mapping dict
-if three_dim:
-    jnt_mapping = { 'root': [{'jnt_11': ['jnt_1','jnt_6']},
-                             {'jnt_13': ['jnt_17', 'jnt_25']}],
-                    #left leg from jnt 6 to 8
-                    "left_leg":[{"jnt_{0}".format(n):"jnt_{0}".format(n+1)} for n in range(6,8)],
-                    #right leg from jnt 1 to 3
-                    "right_leg":[{"jnt_{0}".format(n):"jnt_{0}".format(n+1)} for n in range(1,3)],
-                    #left arm from jnt 17 to 19
-                    "left_arm":[{"jnt_{0}".format(n):"jnt_{0}".format(n+1)} for n in range(17,19)],
-                    #right arm from jnt 25 to 27
-                    "right_arm":[{"jnt_{0}".format(n):"jnt_{0}".format(n+1)} for n in range(25,27)]}
-else:
-    jnt_mapping = { 'root': [{'jnt_1': ['jnt_11','jnt_8','jnt_5', 'jnt_2']}],
-                    #left leg from jnt 6 to 8
-                    "left_leg":[{"jnt_{0}".format(n):"jnt_{0}".format(n+1)} for n in range(11,13)],
-                    #right leg from jnt 1 to 3
-                    "right_leg":[{"jnt_{0}".format(n):"jnt_{0}".format(n+1)} for n in range(8,10)],
-                    #left arm from jnt 17 to 19
-                    "left_arm":[{"jnt_{0}".format(n):"jnt_{0}".format(n+1)} for n in range(5,7)],
-                    #right arm from jnt 17 to 19
-                    "right_arm":[{"jnt_{0}".format(n):"jnt_{0}".format(n+1)} for n in range(2,4)]}
 
         
-def load_data(data):
+def load_data(data, threed):
+    suffix = "threed" if threed else "twod"
     # jnts to ignore
-    to_pass = [5,4,9,10,12] if three_dim else []
+    to_pass = [5,4,9,10,12] if threed else []
     # locator driver grp
-    driver_grp = cmds.group(n="drivers", em=True)
+    if not cmds.objExists("drivers_{0}".format(suffix)):
+        cmds.group(n="drivers_{0}".format(suffix), em=True)
     for frame, jnt in data.iteritems():
         if not cmds.objExists("anim_joint"):
-            anim_grp = cmds.group(n="anim_joint", em=True)
+            cmds.group(n="anim_joint", em=True)
+            anim_grp_prj = cmds.group(n="anim_joint_2d", em=True)
+            cmds.parent(anim_grp_prj, "anim_joint")
         for jnt_id, trans in jnt.iteritems():
             if not int(jnt_id) in to_pass:
-                if not cmds.objExists("anim_jnt_driver_{0}".format(jnt_id)):
+                if not cmds.objExists("anim_jnt_driver_{0}_{1}".format(jnt_id, suffix)):
                     cmds.select(clear=True)
-                    jnt = cmds.joint(n="jnt_{0}".format(jnt_id), relative=True)
+                    jnt = cmds.joint(n="jnt_{0}_{1}".format(jnt_id, suffix), relative=True)
                     cmds.setAttr("{0}.radius".format(jnt), 10)
                     cmds.setAttr("{0}.displayLocalAxis".format(jnt), 1)
                     # match same pos for first frame
-                    if len(trans["translate"])==3:
+                    if threed:
                         cmds.move(trans["translate"][0],trans["translate"][1], trans["translate"][2], jnt)
                     else:
                         cmds.move(trans["translate"][0],trans["translate"][1], jnt)
-                    cmds.parent(jnt, anim_grp)
+                    anim_grp_child = cmds.listRelatives("anim_joint", children=True) or []
+                    if not jnt in anim_grp_child:
+                        cmds.parent(jnt, "anim_joint")
+
+                    if threed:
+                        #create 2d projection
+                        jnt_proj = cmds.duplicate(jnt, n="jnt_prj_{0}".format(jnt_id))
+                        cmds.pointConstraint(jnt, jnt_proj, mo=False, skip="z")
+                        cmds.setAttr("{0}.translateZ".format(jnt_proj[0]), 0)
+                        cmds.parent(jnt_proj, "anim_joint_2d")
+
                     # driver locator
-                    driver = cmds.spaceLocator(n="anim_jnt_driver_{0}".format(jnt_id))
+                    driver = cmds.spaceLocator(n="anim_jnt_driver_{0}_{1}".format(jnt_id, suffix))
                     # drive jnt with animated locator frim frame 0
                     cmds.pointConstraint(driver, jnt)
-                    cmds.parent(driver, driver_grp)
+                    #if not driver in cmds.listRelatives("drivers_{0}".format(suffix), children=True) or []:
+                    cmds.parent(driver, "drivers_{0}".format(suffix))
                 # add trans anim values to driver locator
-                cmds.setKeyframe("anim_jnt_driver_{0}".format(jnt_id), t=frame, v=trans["translate"][0], at='translateX')
-                cmds.setKeyframe("anim_jnt_driver_{0}".format(jnt_id), t=frame, v=trans["translate"][1], at='translateY')
-                if len(trans["translate"])==3:
-                    cmds.setKeyframe("anim_jnt_driver_{0}".format(jnt_id), t=frame, v=trans["translate"][2], at='translateZ')
+                cmds.setKeyframe("anim_jnt_driver_{0}_{1}".format(jnt_id, suffix), t=frame, v=trans["translate"][0], at='translateX')
+                cmds.setKeyframe("anim_jnt_driver_{0}_{1}".format(jnt_id, suffix), t=frame, v=trans["translate"][1], at='translateY')
+                if threed:
+                    cmds.setKeyframe("anim_jnt_driver_{0}_{1}".format(jnt_id, suffix), t=frame, v=trans["translate"][2], at='translateZ')
     # hacking 3d-pose-baseline coord. to maya
-    cmds.setAttr("drivers.rotateX", -110 if three_dim else -180)
+    cmds.setAttr("drivers_{0}.rotateX".format(suffix), -110 if threed else -180)
 
-def parent_skeleton():
+def parent_skeleton(jnt_mapping):
+    if not isinstance(jnt_mapping, dict):
+        raise Exception("expected dict, {0}".format(type(jnt_mapping)))
     #parent jnts based on jnt_mapping
     for body_part, jnt_map in jnt_mapping.iteritems():
         for map_dict in jnt_map:
@@ -105,7 +99,7 @@ def get_rotate(p1, p2):
                                         
     return (m_rotation[0],m_rotation[1],m_rotation[2])
                       
-def set_orient(data):
+def set_orient(data, jnt_mapping):
     #set orient 
     for frame, jnt in data.iteritems():
         cmds.currentTime(int(frame))
@@ -122,19 +116,47 @@ def set_orient(data):
 
 
 def main():
+    threed_jnt_mapping = { 'root': [{'jnt_11_threed': ['jnt_1_threed','jnt_6_threed']},
+                             {'jnt_13_threed': ['jnt_17_threed', 'jnt_25_threed']}],
+                    #left leg from jnt 6 to 8
+                    "left_leg":[{"jnt_{0}_threed".format(n):"jnt_{0}_threed".format(n+1)} for n in range(6,8)],
+                    #right leg from jnt 1 to 3
+                    "right_leg":[{"jnt_{0}_threed".format(n):"jnt_{0}_threed".format(n+1)} for n in range(1,3)],
+                    #left arm from jnt 17 to 19
+                    "left_arm":[{"jnt_{0}_threed".format(n):"jnt_{0}_threed".format(n+1)} for n in range(17,19)],
+                    #right arm from jnt 25 to 27
+                    "right_arm":[{"jnt_{0}_threed".format(n):"jnt_{0}_threed".format(n+1)} for n in range(25,27)]}
+
+    twod_jnt_mapping = { 'root': [{'jnt_1_twod': ['jnt_11_twod','jnt_8_twod','jnt_5_twod', 'jnt_2_twod']}],
+                    #left leg from jnt 11 to 13
+                    "left_leg":[{"jnt_{0}_twod".format(n):"jnt_{0}_twod".format(n+1)} for n in range(11,13)],
+                    #right leg from jnt 8 to 10
+                    "right_leg":[{"jnt_{0}_twod".format(n):"jnt_{0}_twod".format(n+1)} for n in range(8,10)],
+                    #left arm from jnt 5 to 7
+                    "left_arm":[{"jnt_{0}_twod".format(n):"jnt_{0}_twod".format(n+1)} for n in range(5,7)],
+                    #right arm from jnt 2 to 4
+                    "right_arm":[{"jnt_{0}_twod".format(n):"jnt_{0}_twod".format(n+1)} for n in range(2,4)]}
+
     #read 2 or 3d json payload
-    with open(input_json_path) as json_data:
-        # loaded data format:
-        #   frames x jnts x (x,y,z)
-        #   {frame<n>:[jnt<n>:"translate":[x,y,z], jnt<n>:"translate":[x,y,z], ...], frame<n>:...}
-        data = json.load(json_data)
-    #load data and build locs and jnts
-    load_data(data)
-    #parent jnts
-    parent_skeleton()
-    #set orient on 3d
-    if three_dim:
-        set_orient(data)
+    for _data in input_json_path:
+        with open(_data) as json_data:
+            # loaded data format:
+            #   frames x jnts x (x,y,z)
+            #   {frame<n>:[jnt<n>:"translate":[x,y,z], jnt<n>:"translate":[x,y,z], ...], frame<n>:...}
+            data = json.load(json_data)
+        #set orient on 3d
+        if "3d_data" in _data:
+            #load data and build locs and jnts
+            load_data(data, True) #true for 3d data
+            #parent jnts
+            parent_skeleton(threed_jnt_mapping)
+            #set orientation fo jnts
+            set_orient(data, threed_jnt_mapping)
+        else:
+            #load data and build locs and jnts
+            load_data(data, False)
+            #parent jnts
+            parent_skeleton(twod_jnt_mapping)
 
     #convert imageplane
     convert_images = False
@@ -146,4 +168,3 @@ def main():
             frame_idx = int(re.findall("(\d+)", image_file)[-1]) 
             os.rename(file_path, os.path.join(threed_pose_baseline, "maya/image_plane/image.{0}.png".format(frame_idx)))
         print "use", os.path.join(threed_pose_baseline, "maya/image_plane/"), " for imageplane."
-
