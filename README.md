@@ -82,7 +82,7 @@ or
 `python3.5 src/openpose_3dpose_sandbox_realtime.py --camera_frame --residual --batch_norm --dropout 0.5 --max_norm --evaluateActionWise --use_sh --epochs 200 --load 4874200 --pose_estimation_json /path/to/json_directory `
 
 
-### Export to maya and build skeleton
+### Export to DCC application and build skeleton
 
 1. use `--write_json` and `--write_images` flag to export keypoints and frame image from openpose, image will be used as imageplane inside maya.
 2. run `python src/openpose_3dpose_sandbox.py --camera_frame --residual --batch_norm --dropout 0.5 --max_norm --evaluateActionWise --use_sh --epochs 200 --load 4874200 --pose_estimation_json /path/to/json_directory --write_gif --gif_fps 24 `.
@@ -101,7 +101,9 @@ or
     <img src="/imgs/maya_skl.gif", width="360">
 </p>
 
-7. "real-time" stream, openpose > 3d-pose-baseline > maya/unity (soon)
+7. "real-time" stream, openpose > 3d-pose-baseline > maya (soon)
+
+8. implemented unity stream, check work of Zhenyu Chen [openpose_3d-pose-baseline_unity3d](https://github.com/zhenyuczy/openpose_3d-pose-baseline_unity3d)
 
 
 ### Result
