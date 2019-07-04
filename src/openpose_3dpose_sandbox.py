@@ -53,7 +53,7 @@ def read_openpose_json(smooth=True, *args):
         if not os.path.isfile(_file): raise Exception("No file found!!, {0}".format(_file))
         data = json.load(open(_file))
         #take first person
-        _data = data["people"][0]["pose_keypoints"]
+        _data = data["people"][0]["pose_keypoints_2d"] if "pose_keypoints_2d" in data["people"][0] else data["people"][0]["pose_keypoints"]
         xy = []
         if len(_data)>=53:
             #openpose incl. confidence score
@@ -320,7 +320,7 @@ def main(_):
             joints_array[0] = [0 for i in range(36)]
             for o in range(len(joints_array[0])):
                 #feed array with xy array
-                joints_array[0][o] = xy[o]
+                joints_array[0][o] = float(xy[o])
 
             twod_export_units[frame]={}
             for abs_b, __n in enumerate(range(0, len(xy),2)):
@@ -390,18 +390,19 @@ def main(_):
                     poses3d = before_pose
 
             p3d = poses3d
-            to_export = poses3d.tolist()[0]
-            x,y,z = [[] for _ in range(3)]
-            for o in range(0, len(to_export), 3):
-                x.append(to_export[o])
-                y.append(to_export[o+1])
-                z.append(to_export[o+2])
-            export_units[frame]={}
-            for jnt_index, (_x, _y, _z) in enumerate(zip(x,y,z)):
-                export_units[frame][jnt_index] = {"translate": [_x, _y, _z]}
+            if not poses3d is None:
+                to_export = poses3d.tolist()[0]
+                x,y,z = [[] for _ in range(3)]
+                for o in range(0, len(to_export), 3):
+                    x.append(to_export[o])
+                    y.append(to_export[o+1])
+                    z.append(to_export[o+2])
+                export_units[frame]={}
+                for jnt_index, (_x, _y, _z) in enumerate(zip(x,y,z)):
+                    export_units[frame][jnt_index] = {"translate": [_x, _y, _z]}
 
 
-            viz.show3Dpose(p3d, ax, lcolor="#9b59b6", rcolor="#2ecc71")
+                viz.show3Dpose(p3d, ax, lcolor="#9b59b6", rcolor="#2ecc71")
 
             pngName = 'png/pose_frame_{0}.png'.format(str(frame).zfill(12))
             plt.savefig(pngName)
