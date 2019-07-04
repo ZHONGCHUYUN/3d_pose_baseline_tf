@@ -58,6 +58,7 @@ tf.app.flags.DEFINE_float("multiplier", 0.1, "interpolation frame range")
 tf.app.flags.DEFINE_boolean("write_gif", False, "write final anim gif")
 tf.app.flags.DEFINE_integer("gif_fps", 30, "output gif framerate")
 tf.app.flags.DEFINE_integer("verbose", 2, "0:Error, 1:Warning, 2:INFO*(default), 3:debug")
+tf.app.flags.DEFINE_boolean("cache_on_fail", True, "caching last valid frame on invalid frame")
 
 # Train or load
 tf.app.flags.DEFINE_boolean("sample", False, "Set to True for sampling.")
