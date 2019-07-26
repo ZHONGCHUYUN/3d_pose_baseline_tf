@@ -16,23 +16,23 @@ import copy
 # Human3.6m IDs for training and testing
 TRAIN_SUBJECTS = [1,5,6,7,8]
 TEST_SUBJECTS  = [9,11]
-
+# array([ 0,  1,  2,  3,  4,  5,  6,  7, 12, 13, 14, 15, 16, 17, 24, 25, 26,27, 30, 31, 34, 35, 36, 37, 38, 39, 50, 51, 52, 53, 54, 55]))
 # Joints in H3.6M -- data has 32 joints, but only 17 that move; these are the indices.
 H36M_NAMES = ['']*32
-H36M_NAMES[0]  = 'Hip'
-H36M_NAMES[1]  = 'RHip'
-H36M_NAMES[2]  = 'RKnee'
-H36M_NAMES[3]  = 'RFoot'
-H36M_NAMES[6]  = 'LHip'
-H36M_NAMES[7]  = 'LKnee'
-H36M_NAMES[8]  = 'LFoot'
-H36M_NAMES[12] = 'Spine'
-H36M_NAMES[13] = 'Thorax'
-H36M_NAMES[14] = 'Neck/Nose'
-H36M_NAMES[15] = 'Head'
-H36M_NAMES[17] = 'LShoulder'
-H36M_NAMES[18] = 'LElbow'
-H36M_NAMES[19] = 'LWrist'
+H36M_NAMES[0]  = 'Hip' #
+H36M_NAMES[1]  = 'RHip' #
+H36M_NAMES[2]  = 'RKnee' #
+H36M_NAMES[3]  = 'RFoot' # 
+H36M_NAMES[6]  = 'LHip' #
+H36M_NAMES[7]  = 'LKnee' #
+H36M_NAMES[8]  = 'LFoot' #
+H36M_NAMES[12] = 'Spine' #
+H36M_NAMES[13] = 'Thorax' #
+H36M_NAMES[14] = 'Neck/Nose'      #ignore
+H36M_NAMES[15] = 'Head' #
+H36M_NAMES[17] = 'LShoulder' #
+H36M_NAMES[18] = 'LElbow' #
+H36M_NAMES[19] = 'LWrist' #
 H36M_NAMES[25] = 'RShoulder'
 H36M_NAMES[26] = 'RElbow'
 H36M_NAMES[27] = 'RWrist'
@@ -216,6 +216,8 @@ def normalization_stats(complete_data, dim, predict_14=False ):
     dimensions_to_use    = np.where(np.array([x != '' and x != 'Neck/Nose' for x in H36M_NAMES]))[0]
     dimensions_to_use    = np.sort( np.hstack( (dimensions_to_use*2, dimensions_to_use*2+1)))
     dimensions_to_ignore = np.delete( np.arange(len(H36M_NAMES)*2), dimensions_to_use )
+    print('dimensions_to_use:',dimensions_to_use) # array([ 0,  1,  2,  3,  4,  5,  6,  7, 12, 13, 14, 15, 16, 17, 24, 25, 26,27, 30, 31, 34, 35, 36, 37, 38, 39, 50, 51, 52, 53, 54, 55]))
+    print('dimensions_to_ignore:',dimensions_to_ignore) #  array([ 8,  9, 10, 11, 18, 19, 20, 21, 22, 23, 28, 29, 32, 33, 40, 41, 42,43, 44, 45, 46, 47, 48, 49, 56, 57, 58, 59, 60, 61, 62, 63]))
   else: # dim == 3
     dimensions_to_use = np.where(np.array([x != '' for x in H36M_NAMES]))[0]
     dimensions_to_use = np.delete( dimensions_to_use, [0,7,9] if predict_14 else 0 )
@@ -465,6 +467,16 @@ def read_3d_data( actions, data_dir, camera_frame, rcams, predict_14=False ):
   # Divide every dimension independently
   train_set = normalize_data( train_set, data_mean, data_std, dim_to_use )
   test_set  = normalize_data( test_set,  data_mean, data_std, dim_to_use )
+
+
+# ##############add##################
+#   print("data_std_3d:", data_std)
+#   print("data_mean_3d:", data_mean)
+#   print("dim_to_ignore_3d:", dim_to_ignore)
+#   print("dim_to_use_3d:", dim_to_use)
+#   print("dim_ignore_3d", dim_to_ignore)
+#   exit(0)
+# ###################################
 
   return train_set, test_set, data_mean, data_std, dim_to_ignore, dim_to_use, train_root_positions, test_root_positions
 

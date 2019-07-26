@@ -242,6 +242,17 @@ class LinearModel(object):
                      self.outputs]
 
       outputs = session.run(output_feed, input_feed)
+        
+#       ########add#########
+    
+#       print("decoder_outputs:", decoder_outputs)
+#       print("decoder_outputs:", decoder_outputs.shape)
+#       print("model.step.outputs[2]:",outputs[2])
+#       print("model.step.outputs[2].type:", type(outputs[2]))
+#       print("model.step.outputs[2].shape:",len(outputs[2]))
+#       exit(0)
+#       ###################
+      
       return outputs[0], outputs[1], outputs[2]  # No gradient norm
 
   def get_all_batches( self, data_x, data_y, camera_frame, training=True ):

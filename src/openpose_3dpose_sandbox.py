@@ -1,5 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
+plt.switch_backend('agg')
 import matplotlib.gridspec as gridspec
 import tensorflow as tf
 import data_utils
@@ -27,8 +28,11 @@ logger = logging.getLogger(__name__)
 
 def show_anim_curves(anim_dict, _plt):
     val = np.array(list(anim_dict.values()))
+
+    
     for o in range(0,36,2):
         x = val[:,o]
+                
         y = val[:,o+1]
         _plt.plot(x, 'r--', linewidth=0.2)
         _plt.plot(y, 'g', linewidth=0.2)
@@ -53,7 +57,11 @@ def read_openpose_json(smooth=True, *args):
         if not os.path.isfile(_file): raise Exception("No file found!!, {0}".format(_file))
         data = json.load(open(_file))
         #take first person
-        _data = data["people"][0]["pose_keypoints_2d"] if "pose_keypoints_2d" in data["people"][0] else data["people"][0]["pose_keypoints"]
+        try:
+            _data = data["people"][0]["pose_keypoints_2d"] if "pose_keypoints_2d" in data["people"][0] else data["people"][0]["pose_keypoints"]
+        except:
+            print('file:',filename)
+            print('data:',data)
         xy = []
         if len(_data)>=53:
             #openpose incl. confidence score
@@ -120,11 +128,14 @@ def read_openpose_json(smooth=True, *args):
                     _xy[35] = xy[x+1]
             #coco 
             xy = _xy
+            
+            print("xy:", xy)
 
         #add xy to frame
         cache[int(frame_indx[-1])] = xy
 
     plt.figure(1)
+    
     drop_curves_plot = show_anim_curves(cache, plt)
     pngName = 'gif_output/dirty_plot.png'
     drop_curves_plot.savefig(pngName)
@@ -314,6 +325,11 @@ def main(_):
         export_units = {}
         twod_export_units = {}
         for n, (frame, xy) in enumerate(smoothed.items()):
+            #### add######
+            print('frame:',frame)
+            print('xy:',xy) # 36
+            print('length xy',len(xy))
+            #############
             logger.info("calc frame {0}/{1}".format(frame, iter_range))
             # map list into np array  
             joints_array = np.zeros((1, 36))
@@ -332,6 +348,14 @@ def main(_):
                 for j in range(2):
                     # create encoder input
                     enc_in[0][order[i] * 2 + j] = _data[i * 2 + j]
+                    
+                    
+                    ############add###############
+                    print("enc_in[0].length", len(enc_in[0]))
+                    print("order: ", order)
+                    exit(0)
+                    ##############################
+                    
             for j in range(2):
                 # Hip
                 enc_in[0][0 * 2 + j] = (enc_in[0][1 * 2 + j] + enc_in[0][6 * 2 + j]) / 2
@@ -343,6 +367,9 @@ def main(_):
             # set spine
             spine_x = enc_in[0][24]
             spine_y = enc_in[0][25]
+            
+            #print('enc_in shape:',enc_in.shape) #('enc_in shape:', (1, 64)) # human pose all 2d positions 32 key joints
+            #exit(0)
 
             enc_in = enc_in[:, dim_to_use_2d]
             mu = data_mean_2d[dim_to_use_2d]
@@ -352,7 +379,16 @@ def main(_):
             dp = 1.0
             dec_out = np.zeros((1, 48))
             dec_out[0] = [0 for i in range(48)]
+            
             _, _, poses3d = model.step(sess, enc_in, dec_out, dp, isTraining=False)
+            
+            ######add###############
+#             print('enc_in:',enc_in.shape) # 32
+#             print('enc_in:',enc_in)
+#             print('dec_out:',dec_out.shape) # 48
+#             print('poses3d:',poses3d.shape) # 48
+#             exit(0)
+            ######add###############
             all_poses_3d = []
             enc_in = data_utils.unNormalizeData(enc_in, data_mean_2d, data_std_2d, dim_to_ignore_2d)
             poses3d = data_utils.unNormalizeData(poses3d, data_mean_3d, data_std_3d, dim_to_ignore_3d)
@@ -404,7 +440,7 @@ def main(_):
 
                 viz.show3Dpose(p3d, ax, lcolor="#9b59b6", rcolor="#2ecc71")
 
-            pngName = 'png/pose_frame_{0}.png'.format(str(frame).zfill(12))
+            pngName = 'data/new_frames/image{0}.jpg'.format(str(frame).zfill(12))
             plt.savefig(pngName)
             if FLAGS.write_gif:
                 png_lib.append(imageio.imread(pngName))
